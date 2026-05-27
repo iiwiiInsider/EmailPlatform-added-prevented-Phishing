@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure Mail Platform</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <h1>SecureMail</h1>
+        <button id="refreshBtn">Refresh Inbox</button>
+        <button id="newBtn">New Message</button>
+        <div class="session" id="sessionState">Not linked</div>
+      </aside>
+
+      <main class="main">
+        <section class="panel link-panel">
+          <h2>Link Email Account (SMTPS + IMAPS)</h2>
+          <form id="linkForm" class="grid">
+            <input name="email" type="email" placeholder="Email" required />
+            <input name="password" type="password" placeholder="App Password" required />
+            <input name="smtpHost" placeholder="SMTP Host" required />
+            <input name="imapHost" placeholder="IMAP Host" required />
+            <input name="smtpPort" type="number" value="465" required />
+            <input name="imapPort" type="number" value="993" required />
+            <button type="submit">Link Account</button>
+          </form>
+          <p class="note">Only SMTPS 465 and IMAPS 993 are accepted.</p>
+        </section>
+
+        <section class="mail-layout">
+          <section class="panel inbox-panel">
+            <h2>Inbox</h2>
+            <ul id="inboxList" class="inbox-list"></ul>
+          </section>
+
+          <section class="panel viewer-panel">
+            <h2>Viewer</h2>
+            <div id="viewerMeta" class="meta"></div>
+            <div id="riskBadge" class="risk"></div>
+            <div id="viewerBody" class="viewer"></div>
+          </section>
+        </section>
+
+        <section class="panel compose-panel" id="composePanel">
+          <h2>Compose</h2>
+          <form id="composeForm">
+            <input name="to" placeholder="To" required />
+            <input name="cc" placeholder="Cc" />
+            <input name="bcc" placeholder="Bcc" />
+            <input name="subject" placeholder="Subject" />
+            <textarea name="text" rows="4" placeholder="Plain text fallback"></textarea>
+            <label>Inline editor</label>
+            <div id="inlineEditor" contenteditable="true" class="editor"></div>
+            <div id="composeRisk" class="risk"></div>
+            <button type="submit">Send Securely</button>
+          </form>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

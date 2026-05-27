@@ -1,0 +1,29 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #f3f5f8; color: #1c2733; }
+.app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.sidebar { background: #0f2238; color: #fff; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.sidebar h1 { margin: 0 0 8px; font-size: 20px; }
+.sidebar button { background: #2f79c9; color: #fff; border: 0; padding: 10px; border-radius: 6px; cursor: pointer; }
+.session { margin-top: auto; font-size: 12px; opacity: 0.9; }
+.main { padding: 16px; display: grid; gap: 12px; }
+.panel { background: #fff; border-radius: 8px; padding: 14px; border: 1px solid #d6deea; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.grid input, .compose-panel input, .compose-panel textarea { padding: 8px; border: 1px solid #c6cfda; border-radius: 6px; }
+.grid button, .compose-panel button { width: max-content; padding: 10px 14px; border: 0; border-radius: 6px; background: #2163a8; color: #fff; cursor: pointer; }
+.note { margin: 8px 0 0; font-size: 12px; color: #5a6778; }
+.mail-layout { display: grid; grid-template-columns: 360px 1fr; gap: 12px; }
+.inbox-list { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow: auto; }
+.inbox-list li { border: 1px solid #dae3ef; border-radius: 6px; padding: 8px; margin-bottom: 8px; cursor: pointer; }
+.inbox-list li:hover { background: #f6f9fc; }
+.meta { font-size: 13px; color: #445063; margin-bottom: 8px; }
+.viewer { max-height: 340px; overflow: auto; border: 1px solid #e0e7f1; border-radius: 6px; padding: 10px; background: #fcfdff; }
+.compose-panel form { display: grid; gap: 8px; }
+.editor { min-height: 140px; border: 1px solid #c6cfda; border-radius: 6px; background: #fff; padding: 10px; }
+.risk { margin: 6px 0; font-size: 13px; }
+.risk.low { color: #1e7a35; }
+.risk.medium { color: #965e02; }
+.risk.high { color: #b42318; font-weight: 700; }
+@media (max-width: 1100px) {
+  .mail-layout { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr 1fr; }
+}
