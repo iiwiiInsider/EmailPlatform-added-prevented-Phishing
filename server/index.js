@@ -9,6 +9,7 @@ import { simpleParser } from 'mailparser';
 import { z } from 'zod';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { randomBytes } from 'node:crypto';
 import { analyzePhishing } from './phishing.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,7 +57,7 @@ const accountSchema = z.object({
 });
 
 function createSessionId() {
-  return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  return `${Date.now()}_${randomBytes(16).toString('hex')}`;
 }
 
 function getSession(sessionId) {
