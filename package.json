@@ -10,7 +10,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express": "^4.21.2",
+    "express": "^4.22.2",
     "helmet": "^8.1.0",
     "imapflow": "^1.1.1",
     "mailparser": "^3.9.0",
