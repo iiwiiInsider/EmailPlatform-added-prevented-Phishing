@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import nodemailer from 'nodemailer';
 import sanitizeHtml from 'sanitize-html';
 import { ImapFlow } from 'imapflow';
@@ -41,18 +42,36 @@ app.use(
     }
   })
 );
+
+// Rate limiting middleware
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per windowMs
+  message: 'Too many account linking attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 requests per windowMs
+  message: 'Too many requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '500kb' }));
 app.use(express.static(path.join(rootDir, 'public')));
 
 const sessionStore = new Map();
 
 const accountSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-  smtpHost: z.string().min(1),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  smtpHost: z.string().min(1).max(255),
   smtpPort: z.number().int().positive().default(465),
-  imapHost: z.string().min(1),
+  imapHost: z.string().min(1).max(255),
   imapPort: z.number().int().positive().default(993)
 });
 
@@ -116,7 +135,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, uptimeSec: process.uptime() });
 });
 
-app.post('/api/account/link', async (req, res) => {
+app.post('/api/account/link', authLimiter, async (req, res) => {
   try {
     const parsed = accountSchema.parse({
       ...req.body,
@@ -147,7 +166,7 @@ app.post('/api/account/link', async (req, res) => {
   }
 });
 
-app.post('/api/analyze', (req, res) => {
+app.post('/api/analyze', generalLimiter, (req, res) => {
   const subject = String(req.body.subject || '');
   const text = String(req.body.text || '');
   const html = String(req.body.html || '');
@@ -156,9 +175,25 @@ app.post('/api/analyze', (req, res) => {
   res.json({ ok: true, analysis });
 });
 
-app.post('/api/messages', requireSession, async (req, res) => {
+app.post('/api/messages', requireSession, generalLimiter, async (req, res) => {
   try {
     const { to, cc, bcc, subject, html, text } = req.body;
+
+    // Validate email addresses
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const toAddrs = String(to || '').split(',').map(s => s.trim()).filter(Boolean);
+    const ccAddrs = String(cc || '').split(',').map(s => s.trim()).filter(Boolean);
+    const bccAddrs = String(bcc || '').split(',').map(s => s.trim()).filter(Boolean);
+    
+    const allAddrs = [...toAddrs, ...ccAddrs, ...bccAddrs];
+    if (allAddrs.length === 0) {
+      return res.status(400).json({ error: 'At least one recipient required.' });
+    }
+    for (const addr of allAddrs) {
+      if (!emailRegex.test(addr)) {
+        return res.status(400).json({ error: `Invalid recipient address: ${addr}` });
+      }
+    }
 
     const cleanSubject = String(subject || '').slice(0, 300);
     const cleanText = String(text || '').slice(0, MAX_BODY_CHARS);
@@ -167,7 +202,9 @@ app.post('/api/messages', requireSession, async (req, res) => {
       allowedAttributes: {
         a: ['href', 'target', 'rel']
       },
-      allowedSchemes: ['https', 'mailto']
+      allowedSchemes: ['https', 'mailto'],
+      disallowedTagsMode: 'discard',
+      nonListItemSelectorReplacement: false
     });
 
     const analysis = analyzePhishing({
@@ -202,7 +239,7 @@ app.post('/api/messages', requireSession, async (req, res) => {
   }
 });
 
-app.get('/api/messages', requireSession, async (req, res) => {
+app.get('/api/messages', requireSession, generalLimiter, async (req, res) => {
   const limit = Math.min(Number(req.query.limit || 20), 50);
   let imap;
   try {
@@ -240,7 +277,7 @@ app.get('/api/messages', requireSession, async (req, res) => {
   }
 });
 
-app.get('/api/messages/:uid', requireSession, async (req, res) => {
+app.get('/api/messages/:uid', requireSession, generalLimiter, async (req, res) => {
   const uid = Number(req.params.uid);
   let imap;
   try {
@@ -258,7 +295,10 @@ app.get('/api/messages/:uid', requireSession, async (req, res) => {
       const html = sanitizeHtml(parsed.html || '', {
         allowedTags: ['p', 'b', 'strong', 'i', 'em', 'u', 'br', 'ul', 'ol', 'li', 'a', 'blockquote'],
         allowedAttributes: { a: ['href', 'target', 'rel'] },
-        allowedSchemes: ['https', 'mailto']
+        allowedSchemes: ['https', 'mailto'],
+        disallowedTagsMode: 'discard',
+        nonListItemSelectorReplacement: false,
+        enforceHtmlBoundary: true
       });
 
       const text = parsed.text || '';

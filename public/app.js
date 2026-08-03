@@ -73,7 +73,28 @@ async function viewMessage(uid) {
 
   const { message } = data;
   viewerMeta.textContent = `From: ${message.from} | To: ${message.to} | Subject: ${message.subject}`;
-  viewerBody.innerHTML = message.html || `<pre>${message.text || ''}</pre>`;
+  
+  // Clear previous content
+  viewerBody.innerHTML = '';
+  
+  // Safely render sanitized HTML from server
+  if (message.html) {
+    // Server already sanitized HTML, but we'll use a DocumentFragment for additional safety
+    const parser = new DOMParser();
+    try {
+      const doc = parser.parseFromString(message.html, 'text/html');
+      // Extract body content only to prevent HTML injection
+      const bodyContent = doc.body;
+      viewerBody.appendChild(bodyContent);
+    } catch (e) {
+      // Fallback to text if HTML parsing fails
+      viewerBody.textContent = message.text || '';
+    }
+  } else {
+    // Use textContent for plain text to prevent XSS
+    viewerBody.textContent = message.text || '';
+  }
+  
   setRisk(riskBadge, message.analysis);
 }
 
